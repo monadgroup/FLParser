@@ -6,7 +6,7 @@ FLParser is a utility for parsing and structuring project files in [FL Studio](h
 
 FLParser is based on [andrewrk's node-flp](https://github.com/andrewrk/node-flp), but contains many improvements to clean up code and add compatability for newer versions of FL Studio.
 
-Please note: FLParser is currently in beta. Only the minimal things that we need are currently implemented (see [What Works?](#what_works) below), and some of them might break - if they do, or you find something new, please submit an issue or pull request.
+Please note: FLParser is currently in beta. Only the minimal things that we need are currently implemented, and some of them might break - if they do, or you find something new, please submit an issue or pull request.
 
 ## install
 
