@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace Monad.FLParser
@@ -231,8 +232,6 @@ namespace Monad.FLParser
             var dataStart = reader.BaseStream.Position;
             var dataEnd = dataStart + dataLen;
 
-            Console.WriteLine($"data");
-
             var genData = _curChannel?.Data as GeneratorData;
             var autData = _curChannel?.Data as AutomationData;
 
@@ -440,10 +439,18 @@ namespace Monad.FLParser
 
                         for (var i = 0; i < keyCount; i++)
                         {
+                            var startPos = reader.BaseStream.Position;
+
                             var keyPos = reader.ReadDouble();
                             var keyVal = reader.ReadDouble();
                             var keyTension = reader.ReadSingle();
                             var unknown7 = reader.ReadUInt32(); // seems linked to tension?
+
+                            var endPos = reader.BaseStream.Position;
+                            reader.BaseStream.Position = startPos;
+                            var byteData = reader.ReadBytes((int) (endPos - startPos));
+                            Console.WriteLine($"Key {i} data: {string.Join(" ", byteData.Select(x => x.ToString("X2")))}");
+
                             autData.Keyframes[i] = new AutomationKeyframe
                             {
                                 Position = (int) (keyPos * _project.Ppq),
