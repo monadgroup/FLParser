@@ -21,8 +21,8 @@
         public int LowWidth { get; set; } = 0;
         public int BandWidth { get; set; } = 0;
         public int HighWidth { get; set; } = 0;
-        public bool[] Routes { get; set; } = new bool[Project.MaxInsertCount];
-
+        public byte[] Routes { get; set; } = new byte[Project.MaxInsertCount];
+        public int[] RouteVolumes { get; set; } = new int[Project.MaxInsertCount];
         public InsertSlot[] Slots { get; set; } = new InsertSlot[MaxSlotCount];
 
         public Insert()
@@ -30,6 +30,11 @@
             for (var i = 0; i < MaxSlotCount; i++)
             {
                 Slots[i] = new InsertSlot();
+            }
+
+            for (var i = 0; i < Project.MaxInsertCount; i++)
+            {
+                RouteVolumes[i] = 12800;
             }
         }
     }

@@ -94,7 +94,8 @@ namespace Monad.FLParser
             TextUrl = Text + 5,
             TextCommentRtf = Text + 6,
             TextVersion = Text + 7,
-            TextPluginName = Text + 9,
+            GeneratorName = Text + 9,
+            TextPluginName = Text + 11,
             TextInsertName = Text + 12,
             TextMidiCtrls = Text + 16,
             TextDelay = Text + 17,
@@ -118,6 +119,11 @@ namespace Monad.FLParser
             DataInsertRoutes = Data + 25,
             DataInsertFlags = Data + 26,
             DataSaveTimestamp = Data + 27
+        }
+
+        public enum PluginType
+        {
+            Vst = 8
         }
 
         /*public enum FilterType
@@ -157,7 +163,7 @@ namespace Monad.FLParser
             NumTargets = 3
         }*/
 
-        /*public enum PluginChunkId
+        public enum PluginChunkId
         {
             Midi = 1,
             Flags = 2,
@@ -171,12 +177,13 @@ namespace Monad.FLParser
             Name = 54,
             Filename = 55,
             VendorName = 56
-        }*/
+        }
 
         public enum InsertParam
         {
             SlotState = 0x00,
             SlotVolume = 0x01,
+            SlotDryWet = 0x02,
             Volume = 0xC0,
             Pan = 0xC1,
             StereoSep = 0xC2,
@@ -188,12 +195,7 @@ namespace Monad.FLParser
             HighFreq = 0xDA,
             LowWidth = 0xE0,
             BandWidth = 0xE1,
-            HighWidth = 0xE2,
-            Unknown1 = 0xA4,
-            Unknown2 = 0xA5,
-            Unknown3 = 0x06,
-            Unknown4 = 0x07,
-            Unknown5 = 0x08
+            HighWidth = 0xE2
         }
 
         [Flags]

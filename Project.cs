@@ -29,29 +29,31 @@ namespace Monad.FLParser
 
             for (var i = 0; i < MaxInsertCount; i++)
             {
-                Inserts[i] = new Insert {Id = i};
+                Inserts[i] = new Insert { Id = i, Name = $"Insert {i}" };
             }
+
+            Inserts[0].Name = "Master";
         }
 
-        public static Project Load(string path)
+        public static Project Load(string path, bool verbose)
         {
             using (var stream = File.OpenRead(path))
             {
-                return Load(stream);
+                return Load(stream, verbose);
             }
         }
 
-        public static Project Load(Stream stream)
+        public static Project Load(Stream stream, bool verbose)
         {
             using (var reader = new BinaryReader(stream))
             {
-                return Load(reader);
+                return Load(reader, verbose);
             }
         }
 
-        public static Project Load(BinaryReader reader)
+        public static Project Load(BinaryReader reader, bool verbose)
         {
-            var parser = new ProjectParser();
+            var parser = new ProjectParser(verbose);
             return parser.Parse(reader);
         }
     }

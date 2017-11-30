@@ -3,12 +3,12 @@
     public class GeneratorData : IChannelData
     {
         public byte[] PluginSettings { get; set; } = null;
-        public Plugin Plugin { get; set; } = null;
+        public Plugin Plugin { get; set; } = new Plugin();
         public string GeneratorName { get; set; } = "";
         public double Volume { get; set; } = 100;
         public double Panning { get; set; } = 0;
         public uint BaseNote { get; set; } = 57;
-        public int Insert { get; set; } = 0;
+        public int Insert { get; set; } = -1;
         public int LayerParent { get; set; } = -1;
 
         public string SampleFileName { get; set; } = "";

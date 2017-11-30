@@ -13,6 +13,12 @@ namespace Monad.FLParser
         private Channel _curChannel;
         private Insert _curInsert;
         private InsertSlot _curSlot;
+        private bool _verbose = true;
+
+        public ProjectParser(bool verbose)
+        {
+            _verbose = verbose;
+        }
 
         public Project Parse(BinaryReader reader)
         {
@@ -79,7 +85,7 @@ namespace Monad.FLParser
         {
             var startPos = reader.BaseStream.Position;
             var eventId = (Enums.Event) reader.ReadByte();
-            Console.Write($"{eventId} ({(int) eventId:X2}) at {startPos:X} ");
+            Output($"{eventId} ({(int) eventId:X2}) at {startPos:X} ");
 
             if (eventId < Enums.Event.Word) ParseByteEvent(eventId, reader);
             else if (eventId < Enums.Event.Int) ParseWordEvent(eventId, reader);
@@ -91,7 +97,7 @@ namespace Monad.FLParser
         private void ParseByteEvent(Enums.Event eventId, BinaryReader reader)
         {
             var data = reader.ReadByte();
-            Console.WriteLine($"byte: {data:X2}");
+            if (_verbose)OutputLine($"byte: {data:X2}");
 
             var genData = _curChannel?.Data as GeneratorData;
 
@@ -103,13 +109,16 @@ namespace Monad.FLParser
                 case Enums.Event.ByteUseLoopPoints:
                     if (genData != null) genData.SampleUseLoopPoints = true;
                     break;
+                case Enums.Event.ByteMixSliceNum:
+                    if (genData != null) genData.Insert = data;
+                    break;
             }
         }
 
         private void ParseWordEvent(Enums.Event eventId, BinaryReader reader)
         {
             var data = reader.ReadUInt16();
-            Console.WriteLine($"word: {data:X4}");
+            OutputLine($"word: {data:X4}");
 
             var genData = _curChannel?.Data as GeneratorData;
 
@@ -141,7 +150,11 @@ namespace Monad.FLParser
                     _curInsert.Icon = data;
                     break;
                 case Enums.Event.WordCurrentSlotNum:
-                    _curSlot = _curInsert.Slots[data];
+                    if (_curSlot != null) // Current slot after plugin event, now re-arranged.
+                    {
+                        _curInsert.Slots[data] = _curSlot;
+                        _curSlot = new InsertSlot();
+                    }
                     _curChannel = null;
                     break;
             }
@@ -150,7 +163,7 @@ namespace Monad.FLParser
         private void ParseDwordEvent(Enums.Event eventId, BinaryReader reader)
         {
             var data = reader.ReadUInt32();
-            Console.WriteLine($"int: {data:X8}");
+            OutputLine($"int: {data:X8}");
 
             switch (eventId)
             {
@@ -189,7 +202,7 @@ namespace Monad.FLParser
             var unicodeString = Encoding.Unicode.GetString(dataBytes);
             if (unicodeString.EndsWith("\0")) unicodeString = unicodeString.Substring(0, unicodeString.Length - 1);
 
-            Console.WriteLine($"text: {unicodeString}");
+            OutputLine($"text: {unicodeString}");
 
             var genData = _curChannel?.Data as GeneratorData;
 
@@ -217,7 +230,7 @@ namespace Monad.FLParser
                                        (int.Parse(numbers[1]) << 4) +
                                        (int.Parse(numbers[2]) << 0);
                     break;
-                case Enums.Event.TextPluginName:
+                case Enums.Event.GeneratorName:
                     if (genData != null) genData.GeneratorName = unicodeString;
                     break;
                 case Enums.Event.TextInsertName:
@@ -234,15 +247,27 @@ namespace Monad.FLParser
 
             var genData = _curChannel?.Data as GeneratorData;
             var autData = _curChannel?.Data as AutomationData;
-
+            var slotData = _curSlot;
+            
             switch (eventId)
             {
                 case Enums.Event.DataPluginParams:
-                    if (genData == null) break;
-                    if (genData.PluginSettings != null) Console.WriteLine("Overwriting PluginSettings");
+                    if (slotData != null)
+                    {
+                        OutputLine($"Found plugin settings for insert (id {_curInsert.Id})");  // TODO: Id
+                        _curSlot.PluginSettings = reader.ReadBytes(dataLen);
+                        _curSlot.Plugin = ParsePluginChunk(slotData.PluginSettings);
+                    }
+                    else
+                    {
+                        if (genData == null) break;
+                        if (genData.PluginSettings != null)  //OutputLine("Overwriting PluginSettings");
+                            throw new Exception("Attempted to overwrite plugin");
 
-                    Console.WriteLine($"Found plugin settings for {genData.GeneratorName} (id {_curChannel.Id})");
-                    genData.PluginSettings = reader.ReadBytes(dataLen);
+                        OutputLine($"Found plugin settings for {genData.GeneratorName} (id {_curChannel.Id})");
+                        genData.PluginSettings = reader.ReadBytes(dataLen);
+                        genData.Plugin = ParsePluginChunk(genData.PluginSettings);
+                    }
                     break;
                 case Enums.Event.DataChanParams:
                     {
@@ -357,7 +382,16 @@ namespace Monad.FLParser
                                 insert.HighWidth = messageData;
                                 break;
                             default:
-                                Console.WriteLine($"{startPos:X4} insert param: {messageId} {insertId}-{slotId}, data: {messageData:X8}");
+                                if ((int)messageId >= 64 && (int)messageId <= 64 + 104)  // any value 64 or above appears to be the desination insert
+                                {
+                                    var insertDest = (int)messageId - 64;
+                                    insert.RouteVolumes[insertDest] = messageData;
+                                    OutputLine($"{startPos:X4} insert send from {insertId} to {insertDest} volume: {messageData:X8}");
+                                }
+                                else
+                                {
+                                    OutputLine($"{startPos:X4} insert param: {messageId} {insertId}-{slotId}, data: {messageData:X8}");
+                                }
                                 break;
                         }
                     }
@@ -370,15 +404,28 @@ namespace Monad.FLParser
                         var unknown2 = reader.ReadUInt32();
                         var unknown3 = reader.ReadByte();
                         var param = reader.ReadUInt16();
-                        var paramChannel = reader.ReadInt16();
+                        var paramDestination = reader.ReadInt16();
                         var unknown4 = reader.ReadUInt64();
 
                         var channel = _project.Channels[automationChannel];
-                        channel.Data = new AutomationData
+
+                        if ((paramDestination & 0x2000) == 0)  // Automation on channel
                         {
-                            Channel = _project.Channels[paramChannel],
-                            Parameter = param
-                        };
+                            channel.Data = new AutomationData
+                            {
+                                Channel = _project.Channels[paramDestination],
+                                Parameter = param & 0x7fff
+                            };
+                        }
+                        else
+                        {
+                            channel.Data = new AutomationData // automation on insert slot
+                            {
+                                Parameter = param & 0x7fff,
+                                InsertId = (paramDestination & 0x0FF0) >> 6,
+                                SlotId = paramDestination & 0x003F
+                            };
+                        }
                     }
                     break;
                 case Enums.Event.DataPlayListItems:
@@ -449,7 +496,7 @@ namespace Monad.FLParser
                             var endPos = reader.BaseStream.Position;
                             reader.BaseStream.Position = startPos;
                             var byteData = reader.ReadBytes((int) (endPos - startPos));
-                            Console.WriteLine($"Key {i} data: {string.Join(" ", byteData.Select(x => x.ToString("X2")))}");
+                            OutputLine($"Key {i} data: {string.Join(" ", byteData.Select(x => x.ToString("X2")))}");
 
                             autData.Keyframes[i] = new AutomationKeyframe
                             {
@@ -465,7 +512,7 @@ namespace Monad.FLParser
                 case Enums.Event.DataInsertRoutes:
                     for (var i = 0; i < Project.MaxInsertCount; i++)
                     {
-                        _curInsert.Routes[i] = reader.ReadBoolean();
+                        _curInsert.Routes[i] = reader.ReadByte();
                     }
 
                     var newIndex = _curInsert.Id + 1;
@@ -476,11 +523,66 @@ namespace Monad.FLParser
                     reader.ReadUInt32();
                     var flags = (Enums.InsertFlags) reader.ReadUInt32();
                     _curInsert.Flags = flags;
+                    _curSlot = new InsertSlot();  // New insert route, create new slot
                     break;
             }
 
             // make sure cursor is at end of data
             reader.BaseStream.Position = dataEnd;
+        }
+
+        private Plugin ParsePluginChunk(byte[] chunk)
+        {
+            var plugin = new Plugin();
+
+            using (var reader = new BinaryReader(new MemoryStream(chunk)))
+            {
+                var pluginType = (Enums.PluginType)reader.ReadInt32();
+
+                if (pluginType != Enums.PluginType.Vst)
+                {
+                    return null;
+                }
+
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
+                {
+                    var eventId = (Enums.PluginChunkId)reader.ReadInt32();
+                    var length = (int) reader.ReadInt64();
+
+                    switch (eventId)
+                    {
+                        case Enums.PluginChunkId.VendorName:
+                            plugin.VendorName = Encoding.ASCII.GetString(reader.ReadBytes(length));
+                            break;
+                        case Enums.PluginChunkId.Filename:
+                            plugin.FileName = Encoding.ASCII.GetString(reader.ReadBytes(length));
+                            break;
+                        case Enums.PluginChunkId.Name:
+                            plugin.Name = Encoding.ASCII.GetString(reader.ReadBytes(length));
+                            break;
+                        case Enums.PluginChunkId.State:
+                            plugin.State = reader.ReadBytes(length);
+                            break;
+                        default:
+                            OutputLine($"Event {eventId}, data: {string.Join(" ", reader.ReadBytes(length).Select(x => x.ToString("X2")))}");
+                            break;
+                    }
+                }
+
+                return plugin;
+            }
+        }
+
+        private void Output(string value)
+        {
+            if (_verbose)
+                Console.Write(value);
+        }
+
+        private void OutputLine(string value)
+        {
+            if (_verbose)
+                Console.WriteLine(value);
         }
     }
 }
