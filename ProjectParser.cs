@@ -13,7 +13,7 @@ namespace Monad.FLParser
         private Channel _curChannel;
         private Insert _curInsert;
         private InsertSlot _curSlot;
-        private bool _verbose = true;
+        private readonly bool _verbose;
 
         public ProjectParser(bool verbose)
         {
@@ -54,7 +54,7 @@ namespace Monad.FLParser
                 throw new FlParseException($"Invalid number of channels: {channelCount}", reader.BaseStream.Position);
             for (var i = 0; i < channelCount; i++)
             {
-                _project.Channels.Add(new Channel {Id = i, Data = new GeneratorData()});
+                _project.Channels.Add(new Channel { Id = i, Data = new GeneratorData() });
             }
 
             // ppq
@@ -84,8 +84,8 @@ namespace Monad.FLParser
         private void ParseEvent(BinaryReader reader)
         {
             var startPos = reader.BaseStream.Position;
-            var eventId = (Enums.Event) reader.ReadByte();
-            Output($"{eventId} ({(int) eventId:X2}) at {startPos:X} ");
+            var eventId = (Enums.Event)reader.ReadByte();
+            Output($"{eventId} ({(int)eventId:X2}) at {startPos:X} ");
 
             if (eventId < Enums.Event.Word) ParseByteEvent(eventId, reader);
             else if (eventId < Enums.Event.Int) ParseWordEvent(eventId, reader);
@@ -97,7 +97,7 @@ namespace Monad.FLParser
         private void ParseByteEvent(Enums.Event eventId, BinaryReader reader)
         {
             var data = reader.ReadByte();
-            if (_verbose)OutputLine($"byte: {data:X2}");
+            if (_verbose) OutputLine($"byte: {data:X2}");
 
             var genData = _curChannel?.Data as GeneratorData;
 
@@ -128,7 +128,7 @@ namespace Monad.FLParser
                     _curChannel = _project.Channels[data];
                     break;
                 case Enums.Event.WordNewPat:
-                    while (_project.Patterns.Count < data) _project.Patterns.Add(new Pattern {Id = _project.Patterns.Count});
+                    while (_project.Patterns.Count < data) _project.Patterns.Add(new Pattern { Id = _project.Patterns.Count });
                     _curPattern = _project.Patterns[data - 1];
                     break;
                 case Enums.Event.WordTempo:
@@ -248,20 +248,20 @@ namespace Monad.FLParser
             var genData = _curChannel?.Data as GeneratorData;
             var autData = _curChannel?.Data as AutomationData;
             var slotData = _curSlot;
-            
+
             switch (eventId)
             {
                 case Enums.Event.DataPluginParams:
                     if (slotData != null)
                     {
-                        OutputLine($"Found plugin settings for insert (id {_curInsert.Id})");  // TODO: Id
+                        OutputLine($"Found plugin settings for insert (id {_curInsert.Id})");
                         _curSlot.PluginSettings = reader.ReadBytes(dataLen);
                         _curSlot.Plugin = ParsePluginChunk(slotData.PluginSettings);
                     }
                     else
                     {
                         if (genData == null) break;
-                        if (genData.PluginSettings != null)  //OutputLine("Overwriting PluginSettings");
+                        if (genData.PluginSettings != null)
                             throw new Exception("Attempted to overwrite plugin");
 
                         OutputLine($"Found plugin settings for {genData.GeneratorName} (id {_curChannel.Id})");
@@ -273,7 +273,7 @@ namespace Monad.FLParser
                     {
                         if (genData == null) break;
                         var unknown1 = reader.ReadBytes(40);
-                        genData.ArpDir = (Enums.ArpDirection) reader.ReadInt32();
+                        genData.ArpDir = (Enums.ArpDirection)reader.ReadInt32();
                         genData.ArpRange = reader.ReadInt32();
                         genData.ArpChord = reader.ReadInt32();
                         genData.ArpTime = reader.ReadInt32() + 1;
@@ -326,7 +326,7 @@ namespace Monad.FLParser
                     {
                         var startPos = reader.BaseStream.Position;
                         var unknown1 = reader.ReadInt32();
-                        var messageId = (Enums.InsertParam) reader.ReadByte();
+                        var messageId = (Enums.InsertParam)reader.ReadByte();
                         var unknown2 = reader.ReadByte();
                         var channelData = reader.ReadUInt16();
                         var messageData = reader.ReadInt32();
@@ -422,7 +422,7 @@ namespace Monad.FLParser
                             channel.Data = new AutomationData // automation on insert slot
                             {
                                 Parameter = param & 0x7fff,
-                                InsertId = (paramDestination & 0x0FF0) >> 6,
+                                InsertId = (paramDestination & 0x0FF0) >> 6,  // seems to be out by one
                                 SlotId = paramDestination & 0x003F
                             };
                         }
@@ -450,8 +450,8 @@ namespace Monad.FLParser
                             {
                                 Position = startTime,
                                 Length = length,
-                                StartOffset = (int) (startOffset * _project.Ppq),
-                                EndOffset = (int) (endOffset),
+                                StartOffset = (int)(startOffset * _project.Ppq),
+                                EndOffset = (int)(endOffset),
                                 Channel = _project.Channels[patternId]
                             });
                         }
@@ -495,12 +495,12 @@ namespace Monad.FLParser
 
                             var endPos = reader.BaseStream.Position;
                             reader.BaseStream.Position = startPos;
-                            var byteData = reader.ReadBytes((int) (endPos - startPos));
+                            var byteData = reader.ReadBytes((int)(endPos - startPos));
                             OutputLine($"Key {i} data: {string.Join(" ", byteData.Select(x => x.ToString("X2")))}");
 
                             autData.Keyframes[i] = new AutomationKeyframe
                             {
-                                Position = (int) (keyPos * _project.Ppq),
+                                Position = (int)(keyPos * _project.Ppq),
                                 Tension = keyTension,
                                 Value = keyVal
                             };
@@ -512,7 +512,7 @@ namespace Monad.FLParser
                 case Enums.Event.DataInsertRoutes:
                     for (var i = 0; i < Project.MaxInsertCount; i++)
                     {
-                        _curInsert.Routes[i] = reader.ReadByte();
+                        _curInsert.Routes[i] = reader.ReadBoolean();
                     }
 
                     var newIndex = _curInsert.Id + 1;
@@ -521,7 +521,7 @@ namespace Monad.FLParser
                     break;
                 case Enums.Event.DataInsertFlags:
                     reader.ReadUInt32();
-                    var flags = (Enums.InsertFlags) reader.ReadUInt32();
+                    var flags = (Enums.InsertFlags)reader.ReadUInt32();
                     _curInsert.Flags = flags;
                     _curSlot = new InsertSlot();  // New insert route, create new slot
                     break;
@@ -547,7 +547,7 @@ namespace Monad.FLParser
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     var eventId = (Enums.PluginChunkId)reader.ReadInt32();
-                    var length = (int) reader.ReadInt64();
+                    var length = (int)reader.ReadInt64();
 
                     switch (eventId)
                     {

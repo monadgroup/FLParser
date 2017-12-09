@@ -21,7 +21,7 @@
         public int LowWidth { get; set; } = 0;
         public int BandWidth { get; set; } = 0;
         public int HighWidth { get; set; } = 0;
-        public byte[] Routes { get; set; } = new byte[Project.MaxInsertCount];
+        public bool[] Routes { get; set; } = new bool[Project.MaxInsertCount];
         public int[] RouteVolumes { get; set; } = new int[Project.MaxInsertCount];
         public InsertSlot[] Slots { get; set; } = new InsertSlot[MaxSlotCount];
 
