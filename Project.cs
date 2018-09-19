@@ -5,7 +5,7 @@ namespace Monad.FLParser
 {
     public class Project
     {
-        public const int MaxInsertCount = 105;
+        public const int MaxInsertCount = 127;
         public const int MaxTrackCount = 199;
 
         public int MainVolume { get; set; } = 300;

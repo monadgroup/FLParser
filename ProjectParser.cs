@@ -14,6 +14,7 @@ namespace Monad.FLParser
         private Insert _curInsert;
         private InsertSlot _curSlot;
         private readonly bool _verbose;
+        private int _versionMajor;
 
         public ProjectParser(bool verbose)
         {
@@ -226,6 +227,7 @@ namespace Monad.FLParser
                     _project.VersionString = Encoding.UTF8.GetString(dataBytes);
                     if (_project.VersionString.EndsWith("\0")) _project.VersionString = _project.VersionString.Substring(0, _project.VersionString.Length - 1);
                     var numbers = _project.VersionString.Split('.');
+                    _versionMajor = int.Parse(numbers[0]);
                     _project.Version = (int.Parse(numbers[0]) << 8) +
                                        (int.Parse(numbers[1]) << 4) +
                                        (int.Parse(numbers[2]) << 0);
@@ -435,7 +437,11 @@ namespace Monad.FLParser
                         var patternBase = reader.ReadUInt16();
                         var patternId = reader.ReadUInt16();
                         var length = reader.ReadInt32();
-                        var track = 198 - reader.ReadInt32();
+                        var track = reader.ReadInt32();
+                        if (_versionMajor == 20)
+                            track = 501 - track;
+                        else
+                            track = 198 - track;
                         var unknown1 = reader.ReadUInt16();
                         var unknown2 = reader.ReadUInt16();
                         var unknown3 = reader.ReadUInt32();
