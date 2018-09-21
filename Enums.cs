@@ -31,6 +31,7 @@ namespace Monad.FLParser
             ByteChanType = 21,
             ByteMixSliceNum = 22,
             ByteEffectChannelMuted = 27,
+            BytePlayTruncatedNotes = 30,
 
             Word = 64,
             WordNewChan = Word,
