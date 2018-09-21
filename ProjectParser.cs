@@ -113,6 +113,9 @@ namespace Monad.FLParser
                 case Enums.Event.ByteMixSliceNum:
                     if (genData != null) genData.Insert = data;
                     break;
+                case Enums.Event.BytePlayTruncatedNotes:
+                    _project.PlayTruncatedNotes = Convert.ToBoolean(data);
+                    break;
             }
         }
 

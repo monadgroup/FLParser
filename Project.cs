@@ -19,6 +19,7 @@ namespace Monad.FLParser
         public Track[] Tracks { get; set; } = new Track[MaxTrackCount];
         public List<Pattern> Patterns = new List<Pattern>();
         public Insert[] Inserts { get; set; } = new Insert[MaxInsertCount];
+        public bool PlayTruncatedNotes { get; set; } = false;
 
         public Project()
         {
