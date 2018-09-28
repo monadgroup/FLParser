@@ -452,15 +452,15 @@ namespace Monad.FLParser
                         // id of 0-patternBase is samples or automation, after is pattern
                         if (patternId <= patternBase)
                         {
-                            var startOffset = reader.ReadSingle();
-                            var endOffset = reader.ReadSingle();
+                            var startOffset = (int)(reader.ReadSingle() * (float)_project.Ppq);
+                            var endOffset = (int)(reader.ReadSingle() * (float)_project.Ppq);
 
                             _project.Tracks[track].Items.Add(new ChannelPlaylistItem
                             {
                                 Position = startTime,
                                 Length = length,
-                                StartOffset = (int)(startOffset * _project.Ppq),
-                                EndOffset = (int)(endOffset),
+                                StartOffset = startOffset,
+                                EndOffset = endOffset,
                                 Channel = _project.Channels[patternId]
                             });
                         }
