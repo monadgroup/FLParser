@@ -419,7 +419,8 @@ namespace Monad.FLParser
                             channel.Data = new AutomationData
                             {
                                 Channel = _project.Channels[paramDestination],
-                                Parameter = param & 0x7fff
+                                Parameter = param & 0x7fff,
+                                VstParameter = (param & 0x8000) > 0 ? true : false      // switch determines if automation is on channel or vst
                             };
                         }
                         else
@@ -446,8 +447,9 @@ namespace Monad.FLParser
                         else
                             track = 198 - track;
                         var unknown1 = reader.ReadUInt16();
-                        var unknown2 = reader.ReadUInt16();
+                        var itemFlags = reader.ReadUInt16();
                         var unknown3 = reader.ReadUInt32();
+                        bool muted = (itemFlags & 0x2000) > 0 ? true : false;   // flag determines if item is muted
 
                         // id of 0-patternBase is samples or automation, after is pattern
                         if (patternId <= patternBase)
@@ -461,7 +463,8 @@ namespace Monad.FLParser
                                 Length = length,
                                 StartOffset = startOffset,
                                 EndOffset = endOffset,
-                                Channel = _project.Channels[patternId]
+                                Channel = _project.Channels[patternId],
+                                Muted = muted
                             });
                         }
                         else
@@ -475,7 +478,8 @@ namespace Monad.FLParser
                                 Length = length,
                                 StartOffset = startOffset,
                                 EndOffset = endOffset,
-                                Pattern = _project.Patterns[patternId - patternBase - 1]
+                                Pattern = _project.Patterns[patternId - patternBase - 1],
+                                Muted = muted
                             });
                         }
                     }
