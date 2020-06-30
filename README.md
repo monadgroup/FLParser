@@ -262,4 +262,4 @@ Flags for inserts to specify their states. Values are:
 
 ## license
 
-Licensed under the MIT license. See the LICENSE file for more information.
+Licensed under the GPL3 license. See the LICENSE file for more information.
