@@ -98,6 +98,7 @@ namespace Monad.FLParser
             GeneratorName = Text + 9,
             TextPluginName = Text + 11,
             TextInsertName = Text + 12,
+            TextGenre = Text + 14,
             TextAuthor = Text + 15,
             TextMidiCtrls = Text + 16,
             TextDelay = Text + 17,

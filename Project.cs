@@ -12,9 +12,11 @@ namespace Monad.FLParser
         public int MainPitch { get; set; } = 0;
         public int Ppq { get; set; } = 0;
         public double Tempo { get; set; } = 140;
-        public string ProjectTitle { get; set; } = "";
-        public string Author { get; set; } = "";
-        public string VersionString { get; set; } = "";
+        public string ProjectTitle { get; set; } = string.Empty;
+        public string Comment { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
+        public string Genre { get; set; } = string.Empty;
+        public string VersionString { get; set; } = string.Empty;
         public int Version { get; set; } = 0x100;
         public List<Channel> Channels { get; set; } = new List<Channel>();
         public Track[] Tracks { get; set; } = new Track[MaxTrackCount];
