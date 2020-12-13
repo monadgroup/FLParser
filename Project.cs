@@ -13,6 +13,7 @@ namespace Monad.FLParser
         public int Ppq { get; set; } = 0;
         public double Tempo { get; set; } = 140;
         public string ProjectTitle { get; set; } = "";
+        public string Author { get; set; } = "";
         public string VersionString { get; set; } = "";
         public int Version { get; set; } = 0x100;
         public List<Channel> Channels { get; set; } = new List<Channel>();

@@ -221,6 +221,9 @@ namespace Monad.FLParser
                 case Enums.Event.TextTitle:
                     _project.ProjectTitle = unicodeString;
                     break;
+                case Enums.Event.TextAuthor:
+                    _project.Author = unicodeString;
+                    break;
                 case Enums.Event.TextSampleFileName:
                     if (genData == null) break;
                     genData.SampleFileName = unicodeString;
