@@ -57,6 +57,7 @@ int MainPitch;              // pitch of project
 int Ppq;                    // pulses per quarter-beat
 double Tempo;               // tempo of project
 string ProjectTitle;        // title of project
+string Author;              // author of project
 string VersionString;       // xx.xx.xx-formatted string of FL version
 int Version;                // int format of version
 List<Channel> Channels;     // list of channels in project
