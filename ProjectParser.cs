@@ -324,7 +324,8 @@ namespace Monad.FLParser
                         var unknown3 = reader.ReadInt16();
                         var unknown4 = reader.ReadByte();
                         var finePitch = reader.ReadUInt16();
-                        var release = reader.ReadUInt16();
+                        var release = reader.ReadByte(); //Its actually a byte, next byte after is note channel
+                        var color = reader.ReadByte(); //Used for map note color to midi channel
                         var pan = reader.ReadByte();
                         var velocity = reader.ReadByte();
                         var x1 = reader.ReadByte();
@@ -335,6 +336,7 @@ namespace Monad.FLParser
                         _curPattern.Notes[channel].Add(new Note
                         {
                             Position = pos,
+                            Color = color,
                             Length = length,
                             Key = key,
                             FinePitch = finePitch,
