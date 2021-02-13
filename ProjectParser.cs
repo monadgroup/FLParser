@@ -243,6 +243,10 @@ namespace Monad.FLParser
                     _project.Version = (int.Parse(numbers[0]) << 8) +
                                        (int.Parse(numbers[1]) << 4) +
                                        (int.Parse(numbers[2]) << 0);
+
+                    var trackCount = _versionMajor <= 12 ? 199 : 499;
+                    if(_project.Tracks.Length != trackCount)
+                        _project.InitTracks(trackCount);
                     break;
                 case Enums.Event.GeneratorName:
                     if (genData != null) genData.GeneratorName = unicodeString;
