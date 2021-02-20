@@ -8,6 +8,9 @@
         public double Volume { get; set; } = 100;
         public double Panning { get; set; } = 0;
         public uint BaseNote { get; set; } = 57;
+        public byte Echo { get; set; } = 0;
+        public uint EchoFeed { get; set; } = 0;
+        public uint EchoTime { get; set; } = 0;
         public int Insert { get; set; } = -1;
         public int LayerParent { get; set; } = -1;
 

@@ -129,6 +129,40 @@ namespace Monad.FLParser
             Vst = 8
         }
 
+        /*
+           * Modes:
+           * 0  - Single Curve
+           * 1  - Double Curve
+           * 2  - Hold
+           * 3  - Stairs
+           * 4  - Smooth Stairs
+           * 5  - Pulse
+           * 6  - Wave
+           * 7  - Single Curve 2
+           * 8  - Double Curve 2
+           * 9  - Half Sine
+           * 10 - Smooth
+           * 11 - Single Curve 3
+           * 12 - Double Curve 3
+        */
+
+        public enum AutomationMode
+        {
+          SingleCurve = 0,
+          DoubleCurve = 1,
+          Hold = 2,
+          Stairs = 3,
+          SmoothStairs = 4,
+          Pulse = 5,
+          Wave = 6,
+          SingleCurve2 = 7,
+          DoubleCurve2 = 8,
+          HalfSine = 9,
+          Smooth = 10,
+          SingleCurve3 = 11,
+          DoubleCurve3 = 12
+        }
+
         /*public enum FilterType
         {
             LowPass = 0,
