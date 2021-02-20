@@ -244,7 +244,7 @@ namespace Monad.FLParser
                                        (int.Parse(numbers[1]) << 4) +
                                        (int.Parse(numbers[2]) << 0);
 
-                    var trackCount = _versionMajor <= 12 ? 199 : 499;
+                    var trackCount = _versionMajor <= 12 ? 199 : 500;
                     if(_project.Tracks.Length != trackCount)
                         _project.InitTracks(trackCount);
                     break;
@@ -478,10 +478,10 @@ namespace Monad.FLParser
                         var patternId = reader.ReadUInt16();
                         var length = reader.ReadInt32();
                         var track = reader.ReadInt32();
-                        if (_versionMajor == 20)
-                            track = 499 - track;
+                        if(_versionMajor == 20)
+                          track = 499 - track;
                         else
-                            track = 198 - track;
+                          track = 198 - track;
                         var unknown1 = reader.ReadUInt16();
                         var itemFlags = reader.ReadUInt16();
                         var unknown3 = reader.ReadUInt32();
