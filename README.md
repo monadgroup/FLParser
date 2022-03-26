@@ -127,6 +127,7 @@ Represents an individual keyframe in an automation track. Has the following prop
 int Position;       // keyframe position in pulses
 double Value;       // keyframe value
 float Tension;      // keyframe tension
+byte Mode;          // keyframe mode
 ```
 
 #### `class Track`
@@ -263,6 +264,24 @@ Flags for inserts to specify their states. Values are:
  - `Separator = 1 << 10` - insert has separator on left
  - `Lock = 1 << 11` - insert is locked
  - `Solo = 1 << 12` - insert is solo'd (all other inserts will be muted)
+
+### `enum AutomationMode`
+
+Automation ketframe modes. Values are:
+
+ - `SingleCurve = 1`
+ - `SingleCurve = 2`
+ - `Hold = 2`
+ - `Stairs = 3`
+ - `SmoothStairs = 4`
+ - `Pulse = 5`
+ - `Wave = 6`
+ - `SingleCurve2 = 7`
+ - `DoubleCurve2 = 8`
+ - `HalfSine = 9`
+ - `Smooth = 10`
+ - `SingleCurve3 = 11`
+ - `DoubleCurve3 = 12`
 
 ## license
 

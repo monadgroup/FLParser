@@ -76,8 +76,8 @@ namespace Monad.FLParser
                 len = reader.ReadInt32();
 
                 // sanity check
-                if (len < 0 || len > 0x10000000)
-                    throw new FlParseException($"Invalid chunk length: {len}", reader.BaseStream.Position);
+                //if (len < 0 || len > 0x10000000)
+                //    throw new FlParseException($"Invalid chunk length: {len}", reader.BaseStream.Position);
 
             } while (id != "FLdt");
         }
@@ -243,6 +243,10 @@ namespace Monad.FLParser
                     _project.Version = (int.Parse(numbers[0]) << 8) +
                                        (int.Parse(numbers[1]) << 4) +
                                        (int.Parse(numbers[2]) << 0);
+
+                    var trackCount = _versionMajor <= 12 ? 199 : 500;
+                    if(_project.Tracks.Length != trackCount)
+                        _project.InitTracks(trackCount);
                     break;
                 case Enums.Event.GeneratorName:
                     if (genData != null) genData.GeneratorName = unicodeString;
@@ -250,6 +254,14 @@ namespace Monad.FLParser
                 case Enums.Event.TextInsertName:
                     _curInsert.Name = unicodeString;
                     break;
+                case Enums.Event.TextDelay:
+                  if(genData != null)
+                  {
+                    genData.Echo = dataBytes[12];
+                    genData.EchoFeed = (uint)((dataBytes[1] << 8) | dataBytes[0]);
+                    genData.EchoTime = (uint)((dataBytes[17] << 8) | dataBytes[16]);
+                  }
+                  break;
             }
         }
 
@@ -286,6 +298,7 @@ namespace Monad.FLParser
                 case Enums.Event.DataChanParams:
                     {
                         if (genData == null) break;
+                        //Console.WriteLine(reader.BaseStream.Position);
                         var unknown1 = reader.ReadBytes(40);
                         genData.ArpDir = (Enums.ArpDirection)reader.ReadInt32();
                         genData.ArpRange = reader.ReadInt32();
@@ -315,7 +328,8 @@ namespace Monad.FLParser
                         var unknown3 = reader.ReadInt16();
                         var unknown4 = reader.ReadByte();
                         var finePitch = reader.ReadUInt16();
-                        var release = reader.ReadUInt16();
+                        var release = reader.ReadByte(); //Its actually a byte, next byte after is note channel
+                        var color = reader.ReadByte(); //Used for map note color to midi channel
                         var pan = reader.ReadByte();
                         var velocity = reader.ReadByte();
                         var x1 = reader.ReadByte();
@@ -326,6 +340,7 @@ namespace Monad.FLParser
                         _curPattern.Notes[channel].Add(new Note
                         {
                             Position = pos,
+                            Color = color,
                             Length = length,
                             Key = key,
                             FinePitch = finePitch,
@@ -418,12 +433,24 @@ namespace Monad.FLParser
                         var unknown2 = reader.ReadUInt32();
                         var unknown3 = reader.ReadByte();
                         var param = reader.ReadUInt16();
-                        var paramDestination = reader.ReadInt16();
+                        var paramDestination = reader.ReadUInt16();
                         var unknown4 = reader.ReadUInt64();
 
                         var channel = _project.Channels[automationChannel];
 
-                        if ((paramDestination & 0x2000) == 0)  // Automation on channel
+                        if(paramDestination > _project.Channels.Count)
+                        {
+                          //Console.WriteLine("Tempo Automation Track found, but is currently not supported. Please use SAFC to merge the tempo back");
+                          //break;
+                          channel.Data = new AutomationData // automation on insert slot
+                          {
+                            Parameter = param & 0x7fff
+                            //InsertId = (paramDestination & 0x0FF0) >> 6,  // seems to be out by one
+                            //SlotId = paramDestination & 0x003F
+                          };
+                        }
+
+                        if ((paramDestination & 0x2000) == 0 && paramDestination < _project.Channels.Count)  // Automation on channel
                         {
                             channel.Data = new AutomationData
                             {
@@ -451,10 +478,10 @@ namespace Monad.FLParser
                         var patternId = reader.ReadUInt16();
                         var length = reader.ReadInt32();
                         var track = reader.ReadInt32();
-                        if (_versionMajor == 20)
-                            track = 501 - track;
+                        if(_versionMajor == 20)
+                          track = 499 - track;
                         else
-                            track = 198 - track;
+                          track = 198 - track;
                         var unknown1 = reader.ReadUInt16();
                         var itemFlags = reader.ReadUInt16();
                         var unknown3 = reader.ReadUInt32();
@@ -481,15 +508,28 @@ namespace Monad.FLParser
                             var startOffset = reader.ReadInt32();
                             var endOffset = reader.ReadInt32();
 
-                            _project.Tracks[track].Items.Add(new PatternPlaylistItem
+                            if((patternId - patternBase - 1) > _project.Patterns.Count)
                             {
+                              Console.WriteLine("Pattern found on track " + (track) + ", but it seems to be empty. Skipping...");
+                              break;
+                            }
+
+                            try
+                            {
+                              _project.Tracks[track].Items.Add(new PatternPlaylistItem
+                              {
                                 Position = startTime,
                                 Length = length,
                                 StartOffset = startOffset,
                                 EndOffset = endOffset,
                                 Pattern = _project.Patterns[patternId - patternBase - 1],
                                 Muted = muted
-                            });
+                              });
+                            } catch(Exception e)
+                            {
+                              Console.WriteLine("Pattern found on track " + (track) + ", but it seems to be empty. Skipping...");
+                              break;
+                            }
                         }
                     }
                     break;
@@ -508,12 +548,15 @@ namespace Monad.FLParser
 
                         for (var i = 0; i < keyCount; i++)
                         {
+                            reader.ReadBytes(3);
                             var startPos = reader.BaseStream.Position;
 
-                            var keyPos = reader.ReadDouble();
-                            var keyVal = reader.ReadDouble();
-                            var keyTension = reader.ReadSingle();
-                            var unknown7 = reader.ReadUInt32(); // seems linked to tension?
+                            var keyPos = reader.ReadUInt32(); //This is a UInt32
+                            reader.ReadUInt32(); //Skip 4 bytes
+                            var keyVal = reader.ReadUInt32(); //This is a UInt32
+                            reader.ReadByte(); //Skip a byte, since it's useless
+                            var keyTension = reader.ReadSingle(); // Tension is a single
+                            var mode = reader.ReadByte(); // Seems to be the mode of the keyframe
 
                             var endPos = reader.BaseStream.Position;
                             reader.BaseStream.Position = startPos;
@@ -524,8 +567,10 @@ namespace Monad.FLParser
                             {
                                 Position = (int)(keyPos * _project.Ppq),
                                 Tension = keyTension,
-                                Value = keyVal
+                                Value = keyVal,
+                                Mode = mode
                             };
+                            reader.ReadBytes(3);
                         }
 
                         // remaining data is unknown
@@ -563,7 +608,7 @@ namespace Monad.FLParser
 
                 if (pluginType != Enums.PluginType.Vst)
                 {
-                    return null;
+                  return null;
                 }
 
                 while (reader.BaseStream.Position < reader.BaseStream.Length)
@@ -591,6 +636,7 @@ namespace Monad.FLParser
                     }
                 }
 
+                //Console.WriteLine(reader.BaseStream.Position);
                 return plugin;
             }
         }
